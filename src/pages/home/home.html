@@ -1,0 +1,33 @@
+<ion-header>
+  <ion-navbar>
+    <ion-title>
+      MQTT Tutorial
+    </ion-title>
+  </ion-navbar>
+</ion-header>
+
+<ion-content padding>
+
+<ion-card>
+  <ion-card-content>Status: <b>{{mqttStatus}}</b></ion-card-content>
+</ion-card>
+
+<ion-row justify-content-center align-items-center>
+	<button ion-button (click)="connect()">Connect</button>
+	<button ion-button (click)="disconnect()">Disconnect</button>
+</ion-row>
+
+<ion-content padding>
+
+<ion-card>
+  <ion-card-header>Message Received:</ion-card-header>
+  <ion-card-content>{{message}}</ion-card-content>
+</ion-card>
+
+<ion-content padding>
+
+<ion-label stacked>Message to Send:</ion-label>
+<ion-textarea [(ngModel)]='messageToSend'>{{this.messageToSend}}</ion-textarea>
+<button ion-button full (click)="sendMessage()">Send Message</button>
+
+</ion-content>
