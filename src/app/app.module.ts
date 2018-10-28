@@ -8,6 +8,7 @@ import { MyApp } from './app.component';
 import { HomePage } from '../pages/home/home';
 import { BatteryPage } from '../pages/battery/battery';
 import { Push } from '@ionic-native/push';
+import { ChartsModule } from 'ng2-charts';
 
 @NgModule({
   declarations: [
@@ -17,7 +18,8 @@ import { Push } from '@ionic-native/push';
   ],
   imports: [
     BrowserModule,
-    IonicModule.forRoot(MyApp)
+    IonicModule.forRoot(MyApp),
+    ChartsModule
   ],
   bootstrap: [IonicApp],
   entryComponents: [

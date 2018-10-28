@@ -40,9 +40,10 @@ export class HomePage {
 // < ----------Tutorial Things Start----------->
   public connect = () => {
   	this.mqttStatus = 'Connecting...';
-  	//this.mqttClient = new Paho.MQTT.Client('localhost', 22389, '/mqtt', this.clientId);
-  	this.mqttClient = new Paho.MQTT.Client('m15.cloudmqtt.com', 39987, '/mqtt', this.clientId);
-  	//this.mqttClient = new Paho.MQTT.Client('barretts.ecs.vuw.ac.nz', 8883, '/mqtt', this.clientId);
+
+    // --------my mqtt broker-----------
+  	//this.mqttClient = new Paho.MQTT.Client('m15.cloudmqtt.com', 39987, '/mqtt', this.clientId);
+  	this.mqttClient = new Paho.MQTT.Client('barretts.ecs.vuw.ac.nz', 8883, '/mqtt', this.clientId);
 
 	// set callback handlers
 	this.mqttClient.onConnectionLost = this.onConnectionLost;
@@ -50,9 +51,10 @@ export class HomePage {
 
 	// connect the client
 	console.log('Connecting to mqtt via websocket');
+
+  // --------my mqtt broker-----------
 	//this.mqttClient.connect({timeout:10, userName:'avweezgt', password:'Iawb3ug7B2cQ', useSSL:true, onSuccess:this.onConnect, onFailure:this.onFailure});
-	this.mqttClient.connect({timeout:10, userName:'avweezgt', password:'Iawb3ug7B2cQ', useSSL:true, onSuccess:this.onConnect, onFailure:this.onFailure});
-	//this.mqttClient.connect({timeout:10, useSSL:false, onSuccess:this.onConnect, onFailure:this.onFailure});
+	this.mqttClient.connect({timeout:10, useSSL:false, onSuccess:this.onConnect, onFailure:this.onFailure});
   }
 
   public disconnect () {
@@ -139,8 +141,8 @@ export class HomePage {
         this.motions[index] = detection;
         console.log(`Motion Detected ${detection.sensor_location} ${detection.timestamp}`);
         this.lastMotion = detection;
+        this.updateChart();
       }
-
 
     }else{
       console.log(`Last Motion Detected: ${this.lastMotion.sensor_location} ${this.lastMotion.timestamp}`);
@@ -158,8 +160,8 @@ export class HomePage {
     this.lastTime = Math.floor((Math.abs(this.currentTime - this.lastMotionTime) / 1000) / 60);
 
     if (this.lastTime >= 5) {
-//---------------------------------------
-      //sendPushNotification();
+//--------comment out if doesn't work--------------
+      this.sendPushNotification();
 //---------------------------------------
 
 
@@ -178,6 +180,7 @@ export class HomePage {
     }, 60000);
   }
 
+//------push notification-------
   public sendPushNotification = () => {
     this.push.hasPermission()
       .then((res: any) => {
@@ -227,5 +230,53 @@ export class HomePage {
     pushObject.on('registration').subscribe((registration: any) => console.log('Device registered', registration));
 
     pushObject.on('error').subscribe(error => console.error('Error with Push plugin', error));
+  }
+
+
+  //-------Bar chart-----------
+  public barChartOptions:any = {
+    scaleShowVerticalLines: false,
+    responsive: true
+  };
+  public barChartLabels:string[] = [
+    this.motions[0].sensor_location.toUpperCase(),
+    this.motions[1].sensor_location.toUpperCase(),
+    this.motions[2].sensor_location.toUpperCase(),
+    this.motions[3].sensor_location.toUpperCase(),
+    this.motions[4].sensor_location.toUpperCase(),
+  ];
+  public barChartType:string = 'bar';
+  public barChartLegend:boolean = true;
+
+  public barChartData:any[] = [
+    {data: [
+      this.motions[0].count,
+      this.motions[1].count,
+      this.motions[2].count,
+      this.motions[3].count,
+      this.motions[4].count,
+    ], label: 'Sensor triggers'},
+  ];
+
+  // events
+  public chartClicked(e:any):void {
+    console.log(e);
+  }
+
+  public chartHovered(e:any):void {
+    console.log(e);
+  }
+
+  public updateChart():void {
+    let data = [
+      this.motions[0].count,
+      this.motions[1].count,
+      this.motions[2].count,
+      this.motions[3].count,
+      this.motions[4].count,
+    ]
+    let clone = JSON.parse(JSON.stringify(this.barChartData));
+    clone[0].data = data;
+    this.barChartData = clone;
   }
 }

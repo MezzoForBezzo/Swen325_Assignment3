@@ -1,63 +1,71 @@
 <ion-header>
   <ion-navbar>
     <ion-title>
-      MQTT
+      Senior Location Detector
     </ion-title>
   </ion-navbar>
 </ion-header>
 
 <ion-content padding>
-<ion-card>
-  <ion-card-header>Last Detection</ion-card-header>
-  <ion-card-content>
-      <p>
-        Last Seen Location: <b>{{lastMotion.sensor_location.toUpperCase()}}</b>
-      </p>
-      <p>
-        Time Since Last Motion: <b>{{this.lastTime}} mins</b>
-      </p>
-  </ion-card-content>
-</ion-card>
-<ion-row justify-content-center align-items-center>
-	<button ion-button icon-end (click)="goToBatteryPage()">Check Batteries<ion-icon name="battery-full"></ion-icon></button>
-</ion-row>
+  <ion-card>
+    <ion-card-header>Last Detection</ion-card-header>
+    <ion-card-content>
+      <ion-item>
+        <p>Last Seen Location: <b>{{lastMotion.sensor_location.toUpperCase()}}</b></p>
+        <p>Time Since Last Motion: <b>{{this.lastTime}} mins</b></p>
+        <p>Status: <b>{{mqttStatus}}</b></p>
+      </ion-item>
+    </ion-card-content>
+  </ion-card>
+  <ion-row justify-content-center align-items-center>
+  	<button ion-button icon-end (click)="goToBatteryPage()">Check Batteries<ion-icon name="battery-full"></ion-icon></button>
+  </ion-row>
 
+  <ion-card>
+    <ion-card-content>
+      <ion-card-header>Detections</ion-card-header>
+      <ion-card *ngFor="let motion of motions">
+        <ion-card-content>
+          <ion-item>
+           <ion-label item-start>{{motion.sensor_location.toUpperCase()}}</ion-label>
+           <ion-label item-end align="right"><b>{{motion.count}}</b></ion-label>
+         </ion-item>
+        </ion-card-content>
+      </ion-card>
+    </ion-card-content>
+  </ion-card>
 
-<ion-card>
-  <ion-card-content>
-    <ion-card-header>Detections</ion-card-header>
-    <ion-card *ngFor="let motion of motions">
-      <ion-card-content>
-        <ion-item>
-         <ion-label item-start>{{motion.sensor_location.toUpperCase()}}</ion-label>
-         <ion-label item-end align="right"><b>{{motion.count}}</b></ion-label>
-       </ion-item>
-      </ion-card-content>
-    </ion-card>
-  </ion-card-content>
-</ion-card>
+  <ion-card>
+    <!-- <div style="display: block"> -->
+      <canvas baseChart
+              [datasets]="barChartData"
+              [labels]="barChartLabels"
+              [options]="barChartOptions"
+              [legend]="barChartLegend"
+              [chartType]="barChartType"
+              (chartHover)="chartHovered($event)"
+              (chartClick)="chartClicked($event)"></canvas>
 
+      <!-- <button ion-button (click)="this.updateChart()">Update</button> -->
+    <!-- </div> -->
+  </ion-card>
 
-<ion-card>
-  <ion-card-content>Status: <b>{{mqttStatus}}</b></ion-card-content>
-</ion-card>
+  <ion-card>
+    <ion-card-header>Message to Send:</ion-card-header>
+    <ion-card-content>
+      <ion-input type="text" [(ngModel)]='messageToSend'>{{this.messageToSend}} </ion-input>
+      <button ion-button full (click)="sendMessage()">Send Message</button>
+    </ion-card-content>
+  </ion-card>
 
-<ion-row justify-content-center align-items-center>
-	<button ion-button (click)="connect()">Connect</button>
-	<button ion-button (click)="disconnect()">Disconnect</button>
-</ion-row>
+  <ion-row justify-content-center align-items-center>
+  	<button ion-button (click)="connect()">Connect</button>
+  	<button ion-button (click)="disconnect()">Disconnect</button>
+  </ion-row>
 
-<ion-content padding>
-
-<ion-card>
-  <ion-card-header>Message Received:</ion-card-header>
-  <ion-card-content>{{message}}</ion-card-content>
-</ion-card>
-
-<ion-content padding>
-
-<ion-label stacked>Message to Send:</ion-label>
-<ion-textarea [(ngModel)]='messageToSend'>{{this.messageToSend}}</ion-textarea>
-<button ion-button full (click)="sendMessage()">Send Message</button>
+  <ion-card>
+    <ion-card-header>Message Received:</ion-card-header>
+    <ion-card-content>{{message}}</ion-card-content>
+  </ion-card>
 
 </ion-content>
