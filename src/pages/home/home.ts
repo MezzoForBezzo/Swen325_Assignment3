@@ -1,6 +1,7 @@
-import { Component } from '@angular/core';
-import { NavController } from 'ionic-angular';
-
+import { Component  } from '@angular/core';
+import { NavController, AlertController  } from 'ionic-angular';
+import { BatteryPage } from '../battery/battery';
+import { LocalNotifications } from '@ionic-native/local-notifications';
 declare var Paho : any;
 
 
@@ -14,17 +15,31 @@ export class HomePage {
   private mqttStatus: string = 'Disconnected';
   private mqttClient: any = null;
   private message: any = '';
-  private messageToSend: string = 'Your message';
+  private messageToSend: string = '2018-10-28 17:10:01,toilet,1,95';
   private topic: string = 'swen325/t1';
-  private clientId: string = 'yourName'
+  private clientId: string = 'myFabulousName'
 
-  constructor(public navCtrl: NavController) {
+  private lastMotion = { dateTime: 0, sensor_location:"No Detection", motionDetected: false, batteryLevel: '100' };
+  private lastTime: any = 0;
+  private lastMotionTime: any = 0;
+  private currentTime: any = 0;
 
+  private motions = [
+      { dateTime: undefined, sensor_location:"Living", motionDetected: undefined, batteryLevel: '100' },
+      { dateTime: undefined, sensor_location:"Kitchen", motionDetected: undefined, batteryLevel: '100' },
+      { dateTime: undefined, sensor_location:"dining", motionDetected: undefined, batteryLevel: '100' },
+      { dateTime: undefined, sensor_location:"toilet", motionDetected: undefined, batteryLevel: '100' },
+      { dateTime: undefined, sensor_location:"bedroom", motionDetected: undefined, batteryLevel: '100' }
+     ];
+
+  constructor(public navCtrl: NavController, public localNotifications: LocalNotifications, private alertCtrl : AlertController ) {
+    this.connect();
   }
 
   public connect = () => {
   	this.mqttStatus = 'Connecting...';
-  	this.mqttClient = new Paho.MQTT.Client('m10.cloudmqtt.com', 31796, '/mqtt', this.clientId);
+  	//this.mqttClient = new Paho.MQTT.Client('localhost', 22389, '/mqtt', this.clientId);
+  	this.mqttClient = new Paho.MQTT.Client('m15.cloudmqtt.com', 39987, '/mqtt', this.clientId);
   	//this.mqttClient = new Paho.MQTT.Client('barretts.ecs.vuw.ac.nz', 8883, '/mqtt', this.clientId);
 
 	// set callback handlers
@@ -33,7 +48,8 @@ export class HomePage {
 
 	// connect the client
 	console.log('Connecting to mqtt via websocket');
-	this.mqttClient.connect({timeout:10, userName:'ptweqash', password:'ncU6vlGPp1mN', useSSL:true, onSuccess:this.onConnect, onFailure:this.onFailure});
+	//this.mqttClient.connect({timeout:10, userName:'avweezgt', password:'Iawb3ug7B2cQ', useSSL:true, onSuccess:this.onConnect, onFailure:this.onFailure});
+	this.mqttClient.connect({timeout:10, userName:'avweezgt', password:'Iawb3ug7B2cQ', useSSL:true, onSuccess:this.onConnect, onFailure:this.onFailure});
 	//this.mqttClient.connect({timeout:10, useSSL:false, onSuccess:this.onConnect, onFailure:this.onFailure});
   }
 
@@ -72,6 +88,80 @@ export class HomePage {
 
   public onMessageArrived = (message) => {
   	console.log('Received message');
-  	this.message = message.payloadString;
+    this.checkMessage(message.payloadString);
+
+    setTimeout( () => { console.log('Notifying Inactivity....'); }, 5000);
+  }
+
+  public goToBatteryPage = () => {
+    console.log(this.motions);
+    this.navCtrl.push(BatteryPage, {item:this.motions});
+  }
+
+  public checkMessage = (message: string) => {
+    const splitMessage = message.split(',');
+
+    console.log('making resonse');
+    const detection = {
+      dateTime: splitMessage[0],
+      sensor_location: splitMessage[1],
+      motionDetected: splitMessage[2] == '0' ? false : true,
+      batteryLevel: splitMessage[3]
+    }
+
+    console.log(`checking sensor_location: ${detection.sensor_location}` );
+
+    const index = this.motions.findIndex( element => element.sensor_location.toUpperCase() == detection.sensor_location.toUpperCase() );
+
+    if (index >=0 ) {
+      this.motions[index] = detection;
+      console.log('checking to see if motion is detected');
+
+      if (detection.motionDetected == true) {
+        console.log(`sending detection: ${detection.sensor_location}, to lastMotionDetected`);
+        this.message = message;
+        this.lastMotionDetected(detection);
+      }
+    } else {
+      this.message = 'Invalid Data';
+      console.log('Room not found');
+    }
+  }
+
+  public lastMotionDetected = (motion) => {
+    console.log(`sensor_location: ${motion.sensor_location}`);
+    console.log('checking to see if motion is lastMotionDetected');
+    if ((motion.sensor_location !== this.lastMotion.sensor_location) || (motion.dateTime !== this.lastMotion.dateTime)){
+      console.log(`Motion Detected ${motion.sensor_location} ${motion.dateTime}`);
+      this.lastMotion = motion;
+    }else{
+      console.log(`Last Motion Detected: ${this.lastMotion.sensor_location} ${this.lastMotion.dateTime}`);
+    }
+    this.timeSinceLastMotion();
+  }
+
+  public timeSinceLastMotion = () => {
+    this.lastMotionTime = new Date(this.lastMotion.dateTime);
+    this.currentTime = new Date(Date.now());
+
+    console.log(`currentTime: ${this.currentTime}`)
+    console.log(`lastMotionTime: ${this.lastMotionTime}`)
+
+    this.lastTime = Math.floor((Math.abs(this.currentTime - this.lastMotionTime) / 1000) / 60);
+
+    if (this.lastTime >= 5) {
+      console.log('making alert');
+      let alert = this.alertCtrl.create({
+        title: 'INACTIVITY WARNING!',
+        message:  `<p>Last Detection: <b>${this.lastTime} mins</b>.</p>
+                   <p>Last room detected: <b>${this.lastMotion.sensor_location.toUpperCase()}</b></p>` ,
+        buttons: ['Dismiss']
+      });
+      alert.present();
+    }
+
+    setTimeout( () => {
+      this.timeSinceLastMotion();
+    }, 60000);
   }
 }

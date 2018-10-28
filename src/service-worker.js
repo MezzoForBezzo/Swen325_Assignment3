@@ -29,3 +29,10 @@ self.toolbox.router.any('/*', self.toolbox.fastest);
 // for any other requests go to the network, cache,
 // and then only use that cached resource if your user goes offline
 self.toolbox.router.default = self.toolbox.networkFirst;
+
+// function showNotification() {
+//   console.log('Notifying....');
+//   self.registration.showNotification('hello', { body: 'sample message' });
+// }
+//
+// setTimeout( () => { showNotification(); }, 5000);

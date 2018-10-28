@@ -1,12 +1,26 @@
 <ion-header>
   <ion-navbar>
     <ion-title>
-      MQTT Tutorial
+      MQTT
     </ion-title>
   </ion-navbar>
 </ion-header>
 
 <ion-content padding>
+<ion-card>
+  <ion-card-header>Last Detection</ion-card-header>
+  <ion-card-content>
+      <p>
+        Last Seen Location: <b>{{lastMotion.sensor_location.toUpperCase()}}</b>
+      </p>
+      <p>
+        Time Since Last Motion: <b>{{this.lastTime}}</b> mins
+      </p>
+  </ion-card-content>
+</ion-card>
+<ion-row justify-content-center align-items-center>
+	<button ion-button icon-end (click)="goToBatteryPage()">Check Batteries<ion-icon name="battery-full"></ion-icon></button>
+</ion-row>
 
 <ion-card>
   <ion-card-content>Status: <b>{{mqttStatus}}</b></ion-card-content>
