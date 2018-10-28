@@ -19,23 +19,24 @@ export class HomePage {
   private topic: string = 'swen325/t1';
   private clientId: string = 'myFabulousName'
 
-  private lastMotion = { dateTime: 0, sensor_location:"No Detection", motionDetected: false, batteryLevel: '100' };
+  private lastMotion = { timestamp: 0, sensor_location:"No Detection", motion_status: false, battery_status: '100' };
   private lastTime: any = 0;
   private lastMotionTime: any = 0;
   private currentTime: any = 0;
 
   private motions = [
-      { dateTime: undefined, sensor_location:"Living", motionDetected: undefined, batteryLevel: '100' },
-      { dateTime: undefined, sensor_location:"Kitchen", motionDetected: undefined, batteryLevel: '100' },
-      { dateTime: undefined, sensor_location:"dining", motionDetected: undefined, batteryLevel: '100' },
-      { dateTime: undefined, sensor_location:"toilet", motionDetected: undefined, batteryLevel: '100' },
-      { dateTime: undefined, sensor_location:"bedroom", motionDetected: undefined, batteryLevel: '100' }
+      { timestamp: undefined, sensor_location:"Living", motion_status: undefined, battery_status: '100' },
+      { timestamp: undefined, sensor_location:"Kitchen", motion_status: undefined, battery_status: '100' },
+      { timestamp: undefined, sensor_location:"dining", motion_status: undefined, battery_status: '100' },
+      { timestamp: undefined, sensor_location:"toilet", motion_status: undefined, battery_status: '100' },
+      { timestamp: undefined, sensor_location:"bedroom", motion_status: undefined, battery_status: '100' }
      ];
 
   constructor(public navCtrl: NavController, public localNotifications: LocalNotifications, private alertCtrl : AlertController ) {
     this.connect();
   }
 
+// < ----------Tutorial Things Start----------->
   public connect = () => {
   	this.mqttStatus = 'Connecting...';
   	//this.mqttClient = new Paho.MQTT.Client('localhost', 22389, '/mqtt', this.clientId);
@@ -93,6 +94,7 @@ export class HomePage {
     setTimeout( () => { console.log('Notifying Inactivity....'); }, 5000);
   }
 
+// < ----------Tutorial Things end----------->
   public goToBatteryPage = () => {
     console.log(this.motions);
     this.navCtrl.push(BatteryPage, {item:this.motions});
@@ -103,10 +105,10 @@ export class HomePage {
 
     console.log('making resonse');
     const detection = {
-      dateTime: splitMessage[0],
+      timestamp: splitMessage[0],
       sensor_location: splitMessage[1],
-      motionDetected: splitMessage[2] == '0' ? false : true,
-      batteryLevel: splitMessage[3]
+      motion_status: splitMessage[2] == '0' ? false : true,
+      battery_status: splitMessage[3]
     }
 
     console.log(`checking sensor_location: ${detection.sensor_location}` );
@@ -117,7 +119,7 @@ export class HomePage {
       this.motions[index] = detection;
       console.log('checking to see if motion is detected');
 
-      if (detection.motionDetected == true) {
+      if (detection.motion_status == true) {
         console.log(`sending detection: ${detection.sensor_location}, to lastMotionDetected`);
         this.message = message;
         this.lastMotionDetected(detection);
@@ -131,17 +133,17 @@ export class HomePage {
   public lastMotionDetected = (motion) => {
     console.log(`sensor_location: ${motion.sensor_location}`);
     console.log('checking to see if motion is lastMotionDetected');
-    if ((motion.sensor_location !== this.lastMotion.sensor_location) || (motion.dateTime !== this.lastMotion.dateTime)){
-      console.log(`Motion Detected ${motion.sensor_location} ${motion.dateTime}`);
+    if ((motion.sensor_location !== this.lastMotion.sensor_location) || (motion.timestamp !== this.lastMotion.timestamp)){
+      console.log(`Motion Detected ${motion.sensor_location} ${motion.timestamp}`);
       this.lastMotion = motion;
     }else{
-      console.log(`Last Motion Detected: ${this.lastMotion.sensor_location} ${this.lastMotion.dateTime}`);
+      console.log(`Last Motion Detected: ${this.lastMotion.sensor_location} ${this.lastMotion.timestamp}`);
     }
     this.timeSinceLastMotion();
   }
 
   public timeSinceLastMotion = () => {
-    this.lastMotionTime = new Date(this.lastMotion.dateTime);
+    this.lastMotionTime = new Date(this.lastMotion.timestamp);
     this.currentTime = new Date(Date.now());
 
     console.log(`currentTime: ${this.currentTime}`)
