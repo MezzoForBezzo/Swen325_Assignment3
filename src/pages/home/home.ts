@@ -2,6 +2,7 @@ import { Component  } from '@angular/core';
 import { NavController, AlertController  } from 'ionic-angular';
 import { BatteryPage } from '../battery/battery';
 import { LocalNotifications } from '@ionic-native/local-notifications';
+import { Push, PushObject, PushOptions } from '@ionic-native/push';
 declare var Paho : any;
 
 
@@ -25,14 +26,14 @@ export class HomePage {
   private currentTime: any = 0;
 
   private motions = [
-      { timestamp: undefined, sensor_location:"Living", motion_status: undefined, battery_status: '100' },
-      { timestamp: undefined, sensor_location:"Kitchen", motion_status: undefined, battery_status: '100' },
-      { timestamp: undefined, sensor_location:"dining", motion_status: undefined, battery_status: '100' },
-      { timestamp: undefined, sensor_location:"toilet", motion_status: undefined, battery_status: '100' },
-      { timestamp: undefined, sensor_location:"bedroom", motion_status: undefined, battery_status: '100' }
+      { timestamp: undefined, sensor_location:"Living", motion_status: undefined, battery_status: '100', count: 0 },
+      { timestamp: undefined, sensor_location:"Kitchen", motion_status: undefined, battery_status: '100', count: 0 },
+      { timestamp: undefined, sensor_location:"dining", motion_status: undefined, battery_status: '100', count: 0 },
+      { timestamp: undefined, sensor_location:"toilet", motion_status: undefined, battery_status: '100', count: 0 },
+      { timestamp: undefined, sensor_location:"bedroom", motion_status: undefined, battery_status: '100', count: 0 }
      ];
 
-  constructor(public navCtrl: NavController, public localNotifications: LocalNotifications, private alertCtrl : AlertController ) {
+  constructor(public push: Push, public navCtrl: NavController, public localNotifications: LocalNotifications, private alertCtrl : AlertController ) {
     this.connect();
   }
 
@@ -108,34 +109,39 @@ export class HomePage {
       timestamp: splitMessage[0],
       sensor_location: splitMessage[1],
       motion_status: splitMessage[2] == '0' ? false : true,
-      battery_status: splitMessage[3]
+      battery_status: splitMessage[3],
+      count: 0
     }
 
     console.log(`checking sensor_location: ${detection.sensor_location}` );
 
-    const index = this.motions.findIndex( element => element.sensor_location.toUpperCase() == detection.sensor_location.toUpperCase() );
+    if (detection.motion_status == true) {
+        console.log('checking to see if motion is detected');
 
-    if (index >=0 ) {
-      this.motions[index] = detection;
-      console.log('checking to see if motion is detected');
-
-      if (detection.motion_status == true) {
         console.log(`sending detection: ${detection.sensor_location}, to lastMotionDetected`);
         this.message = message;
         this.lastMotionDetected(detection);
-      }
     } else {
       this.message = 'Invalid Data';
       console.log('Room not found');
     }
   }
 
-  public lastMotionDetected = (motion) => {
-    console.log(`sensor_location: ${motion.sensor_location}`);
+  public lastMotionDetected = (detection) => {
+    console.log(`sensor_location: ${detection.sensor_location}`);
     console.log('checking to see if motion is lastMotionDetected');
-    if ((motion.sensor_location !== this.lastMotion.sensor_location) || (motion.timestamp !== this.lastMotion.timestamp)){
-      console.log(`Motion Detected ${motion.sensor_location} ${motion.timestamp}`);
-      this.lastMotion = motion;
+    if ((detection.sensor_location !== this.lastMotion.sensor_location) || (detection.timestamp !== this.lastMotion.timestamp)){
+      const index = this.motions.findIndex( element => element.sensor_location.toUpperCase() == detection.sensor_location.toUpperCase() );
+
+      if (index >=0 ) {
+        detection.count = this.motions[index].count + 1;
+
+        this.motions[index] = detection;
+        console.log(`Motion Detected ${detection.sensor_location} ${detection.timestamp}`);
+        this.lastMotion = detection;
+      }
+
+
     }else{
       console.log(`Last Motion Detected: ${this.lastMotion.sensor_location} ${this.lastMotion.timestamp}`);
     }
@@ -152,6 +158,11 @@ export class HomePage {
     this.lastTime = Math.floor((Math.abs(this.currentTime - this.lastMotionTime) / 1000) / 60);
 
     if (this.lastTime >= 5) {
+//---------------------------------------
+      //sendPushNotification();
+//---------------------------------------
+
+
       console.log('making alert');
       let alert = this.alertCtrl.create({
         title: 'INACTIVITY WARNING!',
@@ -165,5 +176,56 @@ export class HomePage {
     setTimeout( () => {
       this.timeSinceLastMotion();
     }, 60000);
+  }
+
+  public sendPushNotification = () => {
+    this.push.hasPermission()
+      .then((res: any) => {
+
+        if (res.isEnabled) {
+          console.log('We have permission to send push notifications');
+        } else {
+          console.log('We do not have permission to send push notifications');
+        }
+
+      });
+
+    // Create a channel (Android O and above). You'll need to provide the id, description and importance properties.
+    this.push.createChannel({
+     id: "InactivityAlert",
+     description: "Inactivity Alert",
+     // The importance property goes from 1 = Lowest, 2 = Low, 3 = Normal, 4 = High and 5 = Highest.
+     importance: 3
+    }).then(() => console.log('Channel created'));
+
+    // Delete a channel (Android O and above)
+    this.push.deleteChannel('InactivityAlert').then(() => console.log('Channel deleted'));
+
+    // Return a list of currently configured channels
+    this.push.listChannels().then((channels) => console.log('List of channels', channels))
+
+    // to initialize push notifications
+
+    const options: PushOptions = {
+       android: {},
+       ios: {
+           alert: 'true',
+           badge: true,
+           sound: 'false'
+       },
+       windows: {},
+       browser: {
+           pushServiceURL: 'http://push.api.phonegap.com/v1/push'
+       }
+    };
+
+    const pushObject: PushObject = this.push.init(options);
+
+
+    pushObject.on('notification').subscribe((notification: any) => console.log('Received a notification', notification));
+
+    pushObject.on('registration').subscribe((registration: any) => console.log('Device registered', registration));
+
+    pushObject.on('error').subscribe(error => console.error('Error with Push plugin', error));
   }
 }
